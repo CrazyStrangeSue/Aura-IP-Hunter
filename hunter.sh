@@ -58,7 +58,7 @@ if [ -z "$DOWNLOAD_URL" ]; then error "无法从镜像仓库找到名为 '${ASSE
 wget -qO cfst.tar.gz "$DOWNLOAD_URL"
 tar -zxf cfst.tar.gz; chmod +x cfst; info "工具准备就绪: ./cfst"
 info "阶段四：执行速度测试"
-./cfst -f ip.txt -o result.csv -tp 443 -sl 2 -tl 200
+./cfst -f ip.txt -o result.csv -tp 443 -sl 5 -tl 300 -dn 5
 if [ ! -s "result.csv" ]; then warn "测速未找到任何符合条件的 IP。"; BEST_IP="1.1.1.1"; else
     info "阶段五：分析结果"
     BEST_LINE=$(tail -n +2 result.csv | sort -t',' -k6nr | head -n 1)
