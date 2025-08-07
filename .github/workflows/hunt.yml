@@ -4,10 +4,9 @@ on:
   # 允许我们手动从 GitHub 的 Actions 页面触发
   workflow_dispatch:
 
-  # 设置自动化调度。这里的例子是每天 UTC 时间的凌晨 0 点运行一次。
-  # 我们可以稍后再调整这个 cron 时间表。
+  # 设置自动化调度。
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 */6 * * *' # 改为每6小时运行一次
 
 jobs:
   hunt-and-update-dns:
@@ -18,11 +17,13 @@ jobs:
 
       - name: Run IP Hunter Script
         env:
-          # 我们稍后会在 GitHub 仓库的设置中配置这些 Secrets
-          # 这是向脚本安全传递凭据的最佳方式
-          CF_API_TOKEN: \${{ secrets.CF_API_TOKEN }}
-          CF_ZONE_ID: \${{ secrets.CF_ZONE_ID }}
-          CF_RECORD_NAME: \${{ secrets.CF_RECORD_NAME }}
+          # --- 【核心修复】 ---
+          # 我们在这里传递脚本需要的所有 Secrets
+          # 确保你的仓库设置里有这四个 Secrets
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
+          CF_API_EMAIL: ${{ secrets.CF_API_EMAIL }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CF_RECORD_NAME: ${{ secrets.CF_RECORD_NAME }}
         run: |
           # 赋予我们的核心脚本执行权限
           chmod +x ./hunter.sh
