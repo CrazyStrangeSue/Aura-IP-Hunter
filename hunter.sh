@@ -5,7 +5,7 @@ set -o pipefail
 # ====================================================================================
 # Aura IP Hunter - 自主 Cloudflare IP 情报搜集与更新系统
 #
-# v3.0 (无菌室修复版)
+# v4.0 (硬编码诊断版)
 # ====================================================================================
 
 info() { echo -e "\e[32m[信息]\e[0m $1"; }
@@ -30,18 +30,19 @@ function cf_api_request() {
     echo "$response"
 }
 
-info "启动 Aura IP Hunter v3.0 (无菌室修复版)..."
-if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ZONE_ID" ] || [ -z "$CF_RECORD_NAME" ]; then
-  error "一个或多个必需的 Secrets (CF_API_TOKEN, CF_ZONE_ID, CF_RECORD_NAME) 未设置。"
+info "启动 Aura IP Hunter v4.0 (硬编码诊断版)..."
+if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ZONE_ID" ]; then
+  error "必需的 Secrets (CF_API_TOKEN, CF_ZONE_ID) 未设置。"
   exit 1
 fi
 
-# 【核心修复】代码自愈：强制清理输入变量中的所有不可见控制字符
-CF_RECORD_NAME_CLEAN=$(echo "$CF_RECORD_NAME" | tr -d '[:cntrl:]')
+# --- 【核心修复：硬编码】 我们不再使用 CF_RECORD_NAME，直接在这里定义域名 ---
+CF_RECORD_NAME_HARDCODED="fast.chathub.qzz.io"
+# ---
 
 WORK_DIR=$(mktemp -d); cd "$WORK_DIR"; info "工作目录: $WORK_DIR"
 
-info "阶段二：情报搜集 (基础版)"
+info "阶段二：情报搜集"
 curl -sL https://www.cloudflare.com/ips-v4 -o ip.txt
 
 info "阶段三：准备测试工具"
@@ -64,15 +65,15 @@ fi
 info "最终选择的优选 IP 是: ${BEST_IP}"
 
 info "阶段六：开始更新 Cloudflare DNS 记录"
-info "正在获取域名 ${CF_RECORD_NAME_CLEAN} 的记录 ID"
-RECORD_ENDPOINT="zones/${CF_ZONE_ID}/dns_records?name=${CF_RECORD_NAME_CLEAN}&type=A"
+info "正在获取域名 ${CF_RECORD_NAME_HARDCODED} 的记录 ID"
+RECORD_ENDPOINT="zones/${CF_ZONE_ID}/dns_records?name=${CF_RECORD_NAME_HARDCODED}&type=A"
 record_response=$(cf_api_request "GET" "$RECORD_ENDPOINT")
 if [ $? -ne 0 ]; then exit 1; fi
 RECORD_ID=$(echo "$record_response" | jq -r '.result[0].id')
 CURRENT_IP=$(echo "$record_response" | jq -r '.result[0].content')
 
 if [ -z "$RECORD_ID" ] || [ "$RECORD_ID" == "null" ]; then
-    error "未找到域名为 ${CF_RECORD_NAME_CLEAN} 的 A 记录。请先在 Cloudflare 上手动创建一个。"
+    error "未找到域名为 ${CF_RECORD_NAME_HARDCODED} 的 A 记录。请先在 Cloudflare 上手动创建一个。"
     exit 1
 fi
 info "获取到记录 ID: ${RECORD_ID}, 当前 IP: ${CURRENT_IP}"
@@ -82,7 +83,7 @@ if [ "$BEST_IP" == "$CURRENT_IP" ]; then
 else
     info "IP 地址已变化，准备更新！"
     UPDATE_ENDPOINT="zones/${CF_ZONE_ID}/dns_records/${RECORD_ID}"
-    UPDATE_DATA=$(jq -n --arg name "$CF_RECORD_NAME_CLEAN" --arg content "$BEST_IP" \
+    UPDATE_DATA=$(jq -n --arg name "$CF_RECORD_NAME_HARDCODED" --arg content "$BEST_IP" \
       '{type: "A", name: $name, content: $content, ttl: 120, proxied: false}')
     update_response=$(cf_api_request "PUT" "$UPDATE_ENDPOINT" "$UPDATE_DATA")
     if [ $? -ne 0 ]; then exit 1; fi
