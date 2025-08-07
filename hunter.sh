@@ -37,52 +37,54 @@ curl -sL https://www.cloudflare.com/ips-v4 -o ip.txt
 # 在这个版本，我们只使用官方列表。
 info "IP 列表下载完成，总行数: $(wc -l < ip.txt)"
 
-
 # --- 3. 下载并准备测试工具 ---
 info "阶段三：准备测试工具 (CloudflareSpeedTest)..."
 
 # GitHub Actions 的运行环境是 amd64
 ARCH="amd64"
-# 从官方仓库自动获取最新版本号
-LATEST_TAG=$(curl -s "https://api.github.com/repos/XIU2/CloudflareSpeedTest/releases/latest" | grep -oP '"tag_name": "\K[^"]*')
-if [ -z "$LATEST_TAG" ]; then
-    error "无法获取 CloudflareSpeedTest 最新版本号。"
+REPO="XIU2/CloudflareSpeedTest"
+
+# 通过 GitHub API 获取最新发布版的信息
+API_URL="https://api.github.com/repos/${REPO}/releases/latest"
+info "正在从 API 获取最新版本信息: $API_URL"
+
+# 使用 jq 解析 API 响应，找到我们需要的资产的真实下载地址 (browser_download_url)
+# 这是一个更可靠的方法，因为它直接从 API 获取，而不是自己拼接 URL
+ASSET_NAME="CloudflareSpeedTest_linux_${ARCH}.tar.gz"
+DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name == \"${ASSET_NAME}\") | .browser_download_url")
+
+if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
+    error "无法从 GitHub API 找到名为 '${ASSET_NAME}' 的下载资产。"
+    # 打印 API 响应以供调试
+    curl -s "$API_URL"
     exit 1
 fi
-info "检测到最新版本: $LATEST_TAG"
 
-# 构建下载链接
-DOWNLOAD_URL="https://github.com/XIU2/CloudflareSpeedTest/releases/download/${LATEST_TAG}/CloudflareSpeedTest_linux_${ARCH}.tar.gz"
+info "已获取到真实的下载链接: $DOWNLOAD_URL"
 
-info "正在下载工具: $DOWNLOAD_URL"
-# 使用 wget，它在处理重定向和直接下载时更稳定
-# --no-check-certificate: 忽略证书检查，有时在CI/CD环境中需要
-# -T 10: 连接超时10秒
-# -t 3: 重试3次
-wget --no-check-certificate -qO cfst.tar.gz "$DOWNLOAD_URL" -T 10 -t 3
+info "正在下载工具..."
+# 使用 wget 下载这个真实链接
+wget --no-check-certificate -qO cfst.tar.gz "$DOWNLOAD_URL" -T 15 -t 3
 if [ $? -ne 0 ]; then
     error "使用 wget 下载 CloudflareSpeedTest 失败。"
-    # 下载失败后，可以尝试打印文件内容，帮助调试
-    warn "下载失败，文件内容可能如下："
-    cat cfst.tar.gz
     exit 1
 fi
 
-# 在解压前，先检查文件类型，确保我们下载的是一个真正的压缩包
+# 在解压前，再次校验文件类型
 FILE_TYPE=$(file -b cfst.tar.gz)
 info "下载的文件类型为: $FILE_TYPE"
 if ! [[ "$FILE_TYPE" == "gzip compressed data"* ]]; then
     error "下载的文件不是有效的 Gzip 压缩包。中止执行。"
-    warn "文件内容如下："
+    warn "文件内容可能如下："
     cat cfst.tar.gz
     exit 1
 fi
 
 # 解压并授权
+info "正在解压工具..."
 tar -zxf cfst.tar.gz
 chmod +x CloudflareSpeedTest
 info "工具准备就绪: ./CloudflareSpeedTest"
-
 
 # --- 4. 执行：运行速度测试 ---
 info "阶段四：执行速度测试 (这可能需要几分钟)..."
