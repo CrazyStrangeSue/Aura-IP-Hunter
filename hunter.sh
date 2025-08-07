@@ -50,7 +50,7 @@ info "正在从 API 获取最新版本信息: $API_URL"
 
 # 使用 jq 解析 API 响应，找到我们需要的资产的真实下载地址 (browser_download_url)
 # 这是一个更可靠的方法，因为它直接从 API 获取，而不是自己拼接 URL
-ASSET_NAME="CloudflareSpeedTest_linux_${ARCH}.tar.gz"
+ASSET_NAME="cfst_linux_${ARCH}.tar.gz"
 DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name == \"${ASSET_NAME}\") | .browser_download_url")
 
 if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
@@ -83,8 +83,8 @@ fi
 # 解压并授权
 info "正在解压工具..."
 tar -zxf cfst.tar.gz
-chmod +x CloudflareSpeedTest
-info "工具准备就绪: ./CloudflareSpeedTest"
+chmod +x cfst
+info "工具准备就绪: ./cfst"
 
 # --- 4. 执行：运行速度测试 ---
 info "阶段四：执行速度测试 (这可能需要几分钟)..."
@@ -95,7 +95,7 @@ info "阶段四：执行速度测试 (这可能需要几分钟)..."
 # -tp 443        : 指定测试端口为 443
 # -sl 2          : 下载速度下限，低于 2MB/s 的不显示
 # -tl 200        : 平均延迟上限，高于 200ms 的不显示
-./CloudflareSpeedTest -f ip.txt -o result.csv -tp 443 -sl 2 -tl 200
+./cfst -f ip.txt -o result.csv -tp 443 -sl 2 -tl 200
 
 # 检查是否生成了结果文件
 if [ ! -f "result.csv" ] || [ ! -s "result.csv" ]; then
