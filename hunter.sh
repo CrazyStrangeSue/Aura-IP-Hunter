@@ -3,8 +3,8 @@ set -e
 set -o pipefail
 
 # ====================================================================================
-# Aura IP Hunter - 黑匣子诊断脚本 v6.0
-# 目的：在执行 API 调用前，打印出完整的 curl 命令，暴露所有真实变量。
+# Aura IP Hunter - 终极认证版 v7.0
+# 使用 Global API Key 进行认证，绕过所有 Token 问题
 # ====================================================================================
 
 info() { echo -e "\e[32m[信息]\e[0m $1"; }
@@ -17,26 +17,18 @@ function cf_api_request() {
     local data="$3"
     local response
 
-    # --- 【黑匣子记录仪】 ---
-    # 在执行前，打印出我们将要执行的、完整的 curl 命令
-    # 我们用 'set -x' 来让 shell 自动打印命令和展开的变量
-    echo "--- [黑匣子] 准备执行以下 API 请求 ---"
-    set -x
-
+    # --- 【核心改造】使用 Global API Key 进行认证 ---
     if [ -n "$data" ]; then
         response=$(curl -s -X "$method" "https://api.cloudflare.com/client/v4/${endpoint}" \
-            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "X-Auth-Email: $CF_API_EMAIL" \
+            -H "X-Auth-Key: $CF_API_KEY" \
             -H "Content-Type: application/json" --data-raw "$data")
     else
         response=$(curl -s -X "$method" "https://api.cloudflare.com/client/v4/${endpoint}" \
-            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "X-Auth-Email: $CF_API_EMAIL" \
+            -H "X-Auth-Key: $CF_API_KEY" \
             -H "Content-Type: application/json")
     fi
-
-    # 关闭命令追踪
-    set +x
-    echo "--- [黑匣子] API 请求执行完毕 ---"
-    # --- 【黑匣子记录完毕】 ---
     
     if ! echo "$response" | jq -e .success >/dev/null; then
         error "Cloudflare API 请求失败！"
@@ -46,10 +38,9 @@ function cf_api_request() {
     echo "$response"
 }
 
-info "启动 Aura IP Hunter v6.0 (黑匣子诊断版)..."
-# ... (脚本的其余部分保持不变，因为它们都是正确的)
-if [ -z "$CF_API_TOKEN" ] || [ -z "$CF_ZONE_ID" ] || [ -z "$CF_RECORD_NAME" ]; then
-  error "一个或多个必需的 Secrets (CF_API_TOKEN, CF_ZONE_ID, CF_RECORD_NAME) 未设置。"
+info "启动 Aura IP Hunter v7.0 (终极认证版)..."
+if [ -z "$CF_API_KEY" ] || [ -z "$CF_API_EMAIL" ] || [ -z "$CF_ZONE_ID" ] || [ -z "$CF_RECORD_NAME" ]; then
+  error "一个或多个必需的 Secrets (CF_API_KEY, CF_API_EMAIL, CF_ZONE_ID, CF_RECORD_NAME) 未设置。"
   exit 1
 fi
 CF_RECORD_NAME_CLEAN=$(echo "$CF_RECORD_NAME" | tr -d '[:cntrl:]' | tr -d '\\')
