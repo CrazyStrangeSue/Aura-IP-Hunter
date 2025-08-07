@@ -1,12 +1,10 @@
 name: Aura IP Hunter
 
 on:
-  # 允许我们手动从 GitHub 的 Actions 页面触发
   workflow_dispatch:
-
-  # 设置自动化调度。
   schedule:
-    - cron: '0 */6 * * *' # 改为每6小时运行一次
+    # 需求 3: 每 12 小时运行一次
+    - cron: '0 */12 * * *'
 
 jobs:
   hunt-and-update-dns:
@@ -15,17 +13,18 @@ jobs:
       - name: Checkout Project Code
         uses: actions/checkout@v4
 
+      # --- 【核心修复】安装 'whois' 依赖 ---
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y whois
+
       - name: Run IP Hunter Script
         env:
-          # --- 【核心修复】 ---
-          # 我们在这里传递脚本需要的所有 Secrets
-          # 确保你的仓库设置里有这四个 Secrets
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
           CF_API_EMAIL: ${{ secrets.CF_API_EMAIL }}
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
           CF_RECORD_NAME: ${{ secrets.CF_RECORD_NAME }}
         run: |
-          # 赋予我们的核心脚本执行权限
           chmod +x ./hunter.sh
-          # 运行脚本
           ./hunter.sh
