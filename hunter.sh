@@ -55,9 +55,26 @@ info "检测到最新版本: $LATEST_TAG"
 DOWNLOAD_URL="https://github.com/XIU2/CloudflareSpeedTest/releases/download/${LATEST_TAG}/CloudflareSpeedTest_linux_${ARCH}.tar.gz"
 
 info "正在下载工具: $DOWNLOAD_URL"
-curl -sL "$DOWNLOAD_URL" -o cfst.tar.gz
+# 使用 wget，它在处理重定向和直接下载时更稳定
+# --no-check-certificate: 忽略证书检查，有时在CI/CD环境中需要
+# -T 10: 连接超时10秒
+# -t 3: 重试3次
+wget --no-check-certificate -qO cfst.tar.gz "$DOWNLOAD_URL" -T 10 -t 3
 if [ $? -ne 0 ]; then
-    error "下载 CloudflareSpeedTest 失败。"
+    error "使用 wget 下载 CloudflareSpeedTest 失败。"
+    # 下载失败后，可以尝试打印文件内容，帮助调试
+    warn "下载失败，文件内容可能如下："
+    cat cfst.tar.gz
+    exit 1
+fi
+
+# 在解压前，先检查文件类型，确保我们下载的是一个真正的压缩包
+FILE_TYPE=$(file -b cfst.tar.gz)
+info "下载的文件类型为: $FILE_TYPE"
+if ! [[ "$FILE_TYPE" == "gzip compressed data"* ]]; then
+    error "下载的文件不是有效的 Gzip 压缩包。中止执行。"
+    warn "文件内容如下："
+    cat cfst.tar.gz
     exit 1
 fi
 
