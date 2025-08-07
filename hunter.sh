@@ -42,7 +42,7 @@ info "阶段三：准备测试工具 (CloudflareSpeedTest)..."
 
 # GitHub Actions 的运行环境是 amd64
 ARCH="amd64"
-REPO="XIU2/CloudflareSpeedTest"
+REPO="CrazyStrangeSue/CloudflareSpeedTest-Mirror"
 
 # 通过 GitHub API 获取最新发布版的信息
 API_URL="https://api.github.com/repos/${REPO}/releases/latest"
