@@ -3,7 +3,6 @@ name: Aura IP Hunter
 on:
   workflow_dispatch:
   schedule:
-    # 每 12 小时运行一次
     - cron: '0 */12 * * *'
 
 jobs:
@@ -13,8 +12,6 @@ jobs:
       - name: Checkout Project Code
         uses: actions/checkout@v4
 
-      # --- 【核心修复】安装 'whois' 依赖 ---
-      # 我们的 "天网" 侦察兵需要这个工具
       - name: Install Dependencies
         run: |
           sudo apt-get update
@@ -22,10 +19,13 @@ jobs:
 
       - name: Run IP Hunter Script
         env:
+          # --- 【核心修复】 ---
+          # 我们在这里添加了新的 CF_ZONE_NAME Secret
           CF_API_KEY: ${{ secrets.CF_API_KEY }}
           CF_API_EMAIL: ${{ secrets.CF_API_EMAIL }}
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
           CF_RECORD_NAME: ${{ secrets.CF_RECORD_NAME }}
+          CF_ZONE_NAME: ${{ secrets.CF_ZONE_NAME }}
         run: |
           chmod +x ./hunter.sh
           ./hunter.sh
