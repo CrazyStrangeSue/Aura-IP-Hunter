@@ -3,8 +3,8 @@ set -e
 set -o pipefail
 
 # ====================================================================================
-# Aura IP Hunter - v11.0 (情报融合版)
-# 核心升级：直接从中国大陆视角的监控站融合实时、低延迟的 IP 数据
+# Aura IP Hunter - v12.0 (架构自适应版)
+# 自动检测运行环境架构 (amd64/arm64) 并下载对应工具
 # ====================================================================================
 
 info() { echo -e "\e[32m[信息]\e[0m $1"; }
@@ -22,7 +22,7 @@ function cf_api_request() {
     echo "$response"
 }
 
-info "启动 Aura IP Hunter v11.0 (情报融合版)..."
+info "启动 Aura IP Hunter v12.0 (架构自适应版)..."
 if [ -z "$CF_API_KEY" ] || [ -z "$CF_API_EMAIL" ] || [ -z "$CF_ZONE_ID" ] || [ -z "$CF_RECORD_NAME" ]; then
   error "一个或多个必需的 Secrets 未设置。"
   exit 1
@@ -41,12 +41,23 @@ if [ ! -s "ip.txt" ]; then
 fi
 info "情报融合完成！成功获取 $(wc -l < ip.txt) 个经过预筛选的高质量 IP。"
 
-info "阶段三：准备测试工具..."
-ARCH="amd64"; REPO="CrazyStrangeSue/CloudflareSpeedTest-Mirror"
+info "阶段三：准备测试工具 (架构自适应)..."
+MACHINE_ARCH=$(uname -m)
+case "$MACHINE_ARCH" in
+    "x86_64") ARCH="amd64" ;;
+    "aarch64") ARCH="arm64" ;;
+    *)
+        error "不支持的系统架构: ${MACHINE_ARCH}。本项目目前只支持 x86_64 (amd64) 和 aarch64 (arm64)。"
+        exit 1
+        ;;
+esac
+info "检测到系统架构: ${MACHINE_ARCH}, 对应工具架构: ${ARCH}"
+REPO="CrazyStrangeSue/CloudflareSpeedTest-Mirror"
 API_URL="https://api.github.com/repos/${REPO}/releases/latest"
 ASSET_NAME="cfst_linux_${ARCH}.tar.gz"
+info "准备从镜像仓库下载资产: ${ASSET_NAME}"
 DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name == \"${ASSET_NAME}\") | .browser_download_url")
-if [ -z "$DOWNLOAD_URL" ]; then error "无法从镜像仓库找到名为 '${ASSET_NAME}' 的下载资产。"; exit 1; fi
+if [ -z "$DOWNLOAD_URL" ]; then error "无法从镜像仓库找到名为 '${ASSET_NAME}' 的下载资产。请检查军火库是否已同步该版本。"; exit 1; fi
 wget -qO cfst.tar.gz "$DOWNLOAD_URL"
 tar -zxf cfst.tar.gz; chmod +x cfst; info "工具准备就绪: ./cfst"
 
