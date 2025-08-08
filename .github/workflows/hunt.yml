@@ -1,30 +1,62 @@
-name: Aura IP Hunter
+name: Sync Upstream Release
 
 on:
-  workflow_dispatch:
   schedule:
-    # 需求 3: 每 12 小时运行一次
-    - cron: '0 */12 * * *'
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 jobs:
-  hunt-and-update-dns:
+  sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout Project Code
-        uses: actions/checkout@v4
-
-      # --- 【核心修复】安装 'whois' 依赖 ---
-      - name: Install Dependencies
+      - name: Get latest upstream release tag
+        id: get_upstream_tag
         run: |
-          sudo apt-get update
-          sudo apt-get install -y whois
-
-      - name: Run IP Hunter Script
-        env:
-          CF_API_KEY: ${{ secrets.CF_API_KEY }}
-          CF_API_EMAIL: ${{ secrets.CF_API_EMAIL }}
-          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
-          CF_RECORD_NAME: ${{ secrets.CF_RECORD_NAME }}
+          LATEST_TAG=$(curl -sL -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/XIU2/CloudflareSpeedTest/releases/latest" | jq -r .tag_name)
+          echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+        
+      - name: Get latest mirror release tag
+        id: get_mirror_tag
         run: |
-          chmod +x ./hunter.sh
-          ./hunter.sh
+          LATEST_TAG=$(curl -sL -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r .tag_name || echo "tag=null")
+          echo "tag=${LATEST_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Download specific architecture assets
+        id: download
+        if: steps.get_upstream_tag.outputs.tag != steps.get_mirror_tag.outputs.tag
+        run: |
+          UPSTREAM_TAG=${{ steps.get_upstream_tag.outputs.tag }}
+          echo "New version found: ${UPSTREAM_TAG}. Proceeding to download specific assets."
+          
+          API_URL="https://api.github.com/repos/XIU2/CloudflareSpeedTest/releases/tags/${UPSTREAM_TAG}"
+          
+          # --- 【核心升级】 ---
+          # 我们定义一个包含我们关心的文件名的数组
+          declare -a ASSET_NAMES=("cfst_linux_amd64.tar.gz" "cfst_linux_arm64.tar.gz")
+
+          echo "Fetching asset list from ${API_URL}"
+          # 从 API 获取所有附件的信息
+          ASSETS_JSON=$(curl -sL -H "Accept: application/vnd.github.v3+json" "${API_URL}" | jq -r '.assets')
+
+          # 循环遍历我们关心的文件名
+          for name in "${ASSET_NAMES[@]}"; do
+            # 在 JSON 数据中查找匹配的文件，并提取其下载 URL
+            url=$(echo "${ASSETS_JSON}" | jq -r ".[] | select(.name == \"${name}\") | .browser_download_url")
+            if [ -n "$url" ]; then
+              echo "-> Downloading ${name} from ${url}"
+              wget -q --show-progress --progress=bar:force:noscroll --no-check-certificate "${url}"
+            else
+              echo "Warning: Asset ${name} not found in release ${UPSTREAM_TAG}."
+            fi
+          done
+
+      - name: Create new release and upload assets
+        if: steps.download.conclusion == 'success'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_upstream_tag.outputs.tag }}
+          # 只上传我们下载的 tar.gz 文件
+          files: "*.tar.gz"
