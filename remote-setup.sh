@@ -118,3 +118,4 @@ function setup_cloud_hunter() {
     echo -e "${GREEN}[信息]${NC} 已向云端发送狩猎指令！DNS 记录将在几分钟内生成。"
     echo -e "${GREEN}[信息]${NC} 脚本将继续执行本地安装。"
 }
+
