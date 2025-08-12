@@ -6,13 +6,11 @@
 
 Aura 协议的云端伴侣
 
-配合 Aura 协议
+配合 Aura 协议，自动部署 CF 优选IP 和 CF DNS 自动更新
 
-自动部署 CF 优选IP 和 CF DNS 自动更新
+**全自动、云端优选IP。**
 
-**一个全自动的、云端优选IP。**
-
-Aura-IP-Hunter 的最初想法是将预选的 IP 埋藏在特定的 IP 段，通过 Aura 一键脚本，部署在Actions 和 CF 的定时任务。
+Aura-IP-Hunter 的最初想法是将预选的 IP 埋藏在特定的 IP 段，通过 Aura 一键脚本，部署在 “Actions” 和 CF 的定时任务。
 
 ---
 
