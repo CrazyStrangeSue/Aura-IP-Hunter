@@ -1,6 +1,42 @@
-# Aura-IP-Hunter
-Autonomous Cloudflare IP intelligence gathering and DNS update system.
-The cloud-native companion for the Aura Protocol.
- (云端猎人)
-Aura 协议的云原生伴侣-自主的 Cloudflare IP 情报收集和 DNS 更新系统。
+# Aura-IP-Hunter (云端自动化)
+
 ![Aura Protocol Banner](https://github.com/CrazyStrangeSue/Aura-IP-Hunter/blob/main/images/aura-logo.png?raw=true)
+
+## ✨ 项目简介
+
+Aura 协议的云原生伴侣
+
+配合 Aura 协议
+
+自动部署 Cloudflare 优选IP 和 cf_DNS 自动更新
+
+**一个全自动的、云端优选IP。**
+
+Aura-IP-Hunter 的最初想法是将预选的 IP 埋藏在特定的 IP 段，通过 Aura 一键脚本，部署在 GitHub 和 Cloudflare 的定时任务。不一定是最快的，但肯定是最安全的。
+
+---
+
+### 🔥 核心特性：
+
+Aura-IP-Hunter 重新设计了 IP 优选的功能，从单纯追求“速度”，升维至追求“**伪装度**”、“**健壮性**”与“**智能化**”的平衡设计。
+
+#### 🛡️ **设计一：Aura-IP-Hunter 聚合数据源：**
+
+*   **一级源 :** 聚合多平台的筛选和验证的**高质量 IP 池**。
+*   **二级源 :** 通过全球多点 DNS 探测和 BGP 网段分析，主动追踪特定 IP 段。尽可能将流量融为一体，难以被识别和针对。
+*   **备用源 :** 当主源失效时，系统会自动切换至备用源或社区列表，确保正常运行。
+
+#### 🚀 **设计二：两级火箭 (Cloud-Terminal Synergy) - 全局最优与本地最优的完美结合**
+我们深刻理解，在云端（美国）测出的“最快”，不等于在你本地的“最快”。Aura-IP-Hunter 独创的“两级火箭”架构，完美解决了这个问题：
+*   **一级火箭 (云端海选):** Aura-IP-Hunter 在全球的骨干网上，利用其强大算力进行大规模的**带宽和链路质量测试**，筛选出 **Top 5** 的“全球优质IP”，并自动部署到你的 Cloudflare DNS。
+*   **二级火箭 (终端制导):**Aura 脚本，只需要对这 5 个已经通过了严苛海选的“优等生”，进行一次极度轻量级的**本地延迟测试**，从而找到那个真正适合你当前网络环境的。
+
+#### 🌐 **设计三：架构至上 (Architecture First) - 绝对的健壮与通用**
+一个无法适应未来的系统，终将被淘汰。Aura-IP-Hunter 从设计之初就根植了对未来的敬畏：
+*   **自适应架构 :** 自动识别并部署对应的工具。
+*   **自适应网络 (`IPv4`/`IPv6`):** 自动识别并部署 IPv4/IPv6 环境，自动优选并更新 A/AAAA 记录。
+*   **永不失效的依赖 (The Armory):** 我们通过独立的 `CloudflareSpeedTest-Mirror` 项目，建立了全自动的“云端军火库”，彻底摆脱了对任何上游工具作者的脆弱依赖。**即使世界毁灭，我们的武器库依然屹立不倒。**
+
+---
+
+> **加入我们，选择的不仅是一个工具，更是一种在数字世界中生存与发展的智慧。**
