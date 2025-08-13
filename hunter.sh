@@ -1,143 +1,117 @@
-hunt-and-update-dns
-failed now in 22s
-Search logs
-1s
-Current runner version: '2.327.1'
-Runner Image Provisioner
-Operating System
-Runner Image
-GITHUB_TOKEN Permissions
-Secret source: Actions
-Prepare workflow directory
-Prepare all required actions
-Getting action download info
-Download action repository 'actions/checkout@v4' (SHA:08eba0b27e820071cde6df949e0beb9ba4906955)
-Complete job name: hunt-and-update-dns
-1s
-Run actions/checkout@v4
-Syncing repository: CrazyStrangeSue/Aura-IP-Hunter
-Getting Git version info
-Temporarily overriding HOME='/home/runner/work/_temp/d553426d-d4ef-4008-8bad-580dec434e34' before making global git config changes
-Adding repository directory to the temporary git global config as a safe directory
-/usr/bin/git config --global --add safe.directory /home/runner/work/Aura-IP-Hunter/Aura-IP-Hunter
-Deleting the contents of '/home/runner/work/Aura-IP-Hunter/Aura-IP-Hunter'
-Initializing the repository
-Disabling automatic garbage collection
-Setting up auth
-Fetching the repository
-Determining the checkout info
-/usr/bin/git sparse-checkout disable
-/usr/bin/git config --local --unset-all extensions.worktreeConfig
-Checking out the ref
-/usr/bin/git log -1 --format=%H
-4f065a125caed6355bcdf09dcba37a23e2d4432c
-15s
-Run sudo apt-get update
-Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
-Hit:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease
-Get:6 https://packages.microsoft.com/repos/azure-cli noble InRelease [3564 B]
-Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
-Get:7 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
-Get:4 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
-Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
-Get:8 https://packages.microsoft.com/repos/azure-cli noble/main amd64 Packages [1497 B]
-Get:9 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [47.2 kB]
-Get:10 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [32.6 kB]
-Get:11 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1315 kB]
-Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [264 kB]
-Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Components [164 kB]
-Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1120 kB]
-Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [287 kB]
-Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Components [377 kB]
-Get:17 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [1650 kB]
-Get:18 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [361 kB]
-Get:19 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Components [212 B]
-Get:20 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Components [940 B]
-Get:21 http://azure.archive.ubuntu.com/ubuntu noble-backports/main amd64 Components [7084 B]
-Get:22 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages [28.9 kB]
-Get:23 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe Translation-en [17.4 kB]
-Get:24 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Components [31.0 kB]
-Get:25 http://azure.archive.ubuntu.com/ubuntu noble-backports/restricted amd64 Components [216 B]
-Get:26 http://azure.archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Components [212 B]
-Get:27 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1056 kB]
-Get:28 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [183 kB]
-Get:29 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Components [21.6 kB]
-Get:30 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [878 kB]
-Get:31 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Components [52.3 kB]
-Get:32 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [1566 kB]
-Get:33 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [343 kB]
-Get:34 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Components [212 B]
-Get:35 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse amd64 Components [212 B]
-Fetched 10.2 MB in 1s (7928 kB/s)
-Reading package lists...
-Reading package lists...
-Building dependency tree...
-Reading state information...
-The following NEW packages will be installed:
-  whois
-0 upgraded, 1 newly installed, 0 to remove and 14 not upgraded.
-Need to get 51.7 kB of archives.
-After this operation, 279 kB of additional disk space will be used.
-Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
-Get:2 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 whois amd64 5.5.22 [51.7 kB]
-Fetched 51.7 kB in 0s (477 kB/s)
-Selecting previously unselected package whois.
-(Reading database ... 
-(Reading database ... 5%
-(Reading database ... 10%
-(Reading database ... 15%
-(Reading database ... 20%
-(Reading database ... 25%
-(Reading database ... 30%
-(Reading database ... 35%
-(Reading database ... 40%
-(Reading database ... 45%
-(Reading database ... 50%
-(Reading database ... 55%
-(Reading database ... 60%
-(Reading database ... 65%
-(Reading database ... 70%
-(Reading database ... 75%
-(Reading database ... 80%
-(Reading database ... 85%
-(Reading database ... 90%
-(Reading database ... 95%
-(Reading database ... 100%
-(Reading database ... 219989 files and directories currently installed.)
-Preparing to unpack .../whois_5.5.22_amd64.deb ...
-Unpacking whois (5.5.22) ...
-Setting up whois (5.5.22) ...
-Processing triggers for man-db (2.12.0-4build2) ...
+#!/bin/bash
+set -e
+set -o pipefail
 
-Running kernel seems to be up-to-date.
+# ====================================================================================
+# Aura IP Hunter - v25.0 (Fortress Edition)
+# 最终毕业作品：多源情报、双轨并行、健壮提取、语法完美
+# ====================================================================================
+WORK_DIR=$(mktemp -d); cd "$WORK_DIR" || exit 1
+info() { echo -e "\e[32m[信息]\e[0m $1"; }
+error() { echo -e "\e[31m[错误]\e[0m $1"; exit 1; }
 
-Restarting services...
+# 加载配置文件 (如果存在)
+if [ -f "../hunter.conf" ]; then info "加载 hunter.conf..."; source ../hunter.conf; fi
+TOP_N=${TOP_N:-5}
+CF_API_REQUEST_ARGS=(-s -H "X-Auth-Email: ${CF_API_EMAIL}" -H "X-Auth-Key: ${CF_API_KEY}" -H "Content-Type: application/json")
 
-Service restarts being deferred:
- systemctl restart hosted-compute-agent.service
+# --- 【健壮性升级】多源情报获取函数 ---
+fetch_ips() {
+    local ip_type="$1"
+    local primary_source="https://stock.hostmonit.com/CloudFlareYes"
+    local fallback_source_v4="https://www.cloudflare.com/ips-v4"
+    local fallback_source_v6="https://www.cloudflare.com/ips-v6"
+    local output_file="ip_${ip_type}.txt"
+    
+    info "阶段1.1: 尝试从主情报源 [${primary_source}] 获取 ${ip_type} IP..."
+    if [[ "$ip_type" == "IPv4" ]]; then
+        curl -s "$primary_source" | awk -F, '/\./ {print $1}' > "$output_file"
+    else
+        curl -s "$primary_source" | awk -F, '/:/ {print $1}' | sed 's/\[//g; s/\]//g' > "$output_file"
+    fi
 
-No containers need to be restarted.
+    if [ ! -s "$output_file" ]; then
+        warn "主情报源获取失败或无数据，自动切换至备用源..."
+        local fallback_source
+        if [[ "$ip_type" == "IPv4" ]]; then
+            fallback_source="$fallback_source_v4"
+        else
+            fallback_source="$fallback_source_v6"
+        fi
+        info "阶段1.2: 尝试从备用情报源 [${fallback_source}] 获取 ${ip_type} IP..."
+        curl -s "$fallback_source" > "$output_file"
+    fi
 
-No user sessions are running outdated binaries.
+    if [ ! -s "$output_file" ]; then
+        error "所有情报源均无法获取任何 ${ip_type} 数据。"
+    fi
+    info "情报获取成功！准备了 $(wc -l < "$output_file") 个高质量 ${ip_type} IP。"
+}
 
-No VM guests are running outdated hypervisor (qemu) binaries on this host.
-1s
-Run chmod +x ./hunter.sh
-[信息] 启动 Aura IP Hunter v23.0 (Dual Track Edition)...
-[信息] 准备测试工具...
-[信息] 工具准备就绪。
-[信息] ====== 开始处理 IPv4 优选 ======
-[信息] 阶段1：获取 IPv4 情报...
-[信息] 获取了 1 个高质量 IPv4 IP。
-[信息] 阶段2：执行 IPv4 测速...
-# XIU2/CloudflareSpeedTest v2.3.4 
 
-2025/08/13 13:32:37 ParseCIDR err invalid CIDR address: <!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=Edge"><meta name="robots" content="noindex
-Error: Process completed with exit code 1.
-0s
-/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
-http.https://github.com/.extraheader
-/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
-/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
-1s
-Cleaning up orphan processes
+# --- 核心优选与更新函数 ---
+hunt_and_update() {
+    local ip_type="$1"
+    local dns_record_type="$2"
+    local speedtest_args="$3"
+    local start_index="$4"
+
+    info "====== 开始处理 ${ip_type} 优选 ======"
+    fetch_ips "$ip_type"
+    
+    info "阶段2：执行 ${ip_type} 测速..."; 
+    ./cfst -f "ip_${ip_type}.txt" -o "result_${ip_type}.csv" -p "${TOP_N}" ${speedtest_args}
+    if [ ! -s "result_${ip_type}.csv" ]; then error "${ip_type} 优选失败：未能找到满足条件的 IP。"; fi
+    
+    local top_ips; top_ips=($(tail -n +2 "result_${ip_type}.csv" | awk -F, '{print $1}'))
+    info "已捕获 Top ${#top_ips[@]} ${ip_type} IP 舰队：${top_ips[*]}"
+    if [ ${#top_ips[@]} -eq 0 ]; then error "未能提取任何 ${ip_type} IP。"; fi
+    
+    info "阶段3：部署 ${ip_type} 舰队至 Cloudflare DNS..."
+    local all_records_endpoint="https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records?type=${dns_record_type}&per_page=100"
+    local all_records_response; all_records_response=$(curl "${CF_API_REQUEST_ARGS[@]}" -X GET "${all_records_endpoint}")
+    
+    local current_index=0
+    for i in $(seq "${start_index}" "$((start_index + TOP_N - 1))"); do
+        local target_domain="${CF_RECORD_NAME}${i}.${CF_ZONE_NAME}"
+        
+        if [ -z "${top_ips[$current_index]}" ]; then warn "优选IP不足，无法为 ${target_domain} 分配。"; continue; fi
+        local new_ip="${top_ips[$current_index]}"
+        info "正在处理 #${i}: ${target_domain}"
+        local record_info; record_info=$(echo "$all_records_response" | jq -r ".result[] | select(.name == \"${target_domain}\")")
+        
+        if [ -z "$record_info" ]; then
+            info "  -> 记录不存在，创建 -> ${new_ip}"
+            local update_endpoint="https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records"
+            local update_data; update_data=$(jq -n --arg type "$dns_record_type" --arg name "$target_domain" --arg content "$new_ip" '{type: $type, name: $name, content: $content, ttl: 120, proxied: false}')
+            curl "${CF_API_REQUEST_ARGS[@]}" -X POST "${update_endpoint}" --data-raw "$update_data" > /dev/null
+        else
+            local record_id; record_id=$(echo "$record_info" | jq -r '.id'); local current_ip; current_ip=$(echo "$record_info" | jq -r '.content')
+            if [ "$new_ip" == "$current_ip" ]; then info "  -> IP 未变化 (${current_ip})。"; else
+                info "  -> IP 变化 (${current_ip} -> ${new_ip})，更新..."
+                local update_endpoint="https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records/${record_id}"
+                local update_data; update_data=$(jq -n --arg type "$dns_record_type" --arg name "$target_domain" --arg content "$new_ip" '{type: $type, name: $name, content: $content, ttl: 120, proxied: false}')
+                curl "${CF_API_REQUEST_ARGS[@]}" -X PUT "${update_endpoint}" --data-raw "$update_data" > /dev/null
+            fi
+        fi
+        current_index=$((current_index+1))
+    done
+    info "====== ${ip_type} 舰队部署完毕 ======"
+}
+
+# --- 主流程 ---
+info "启动 Aura IP Hunter v25.0 (Fortress Edition)..."
+if ! command -v jq &> /dev/null; then sudo apt-get update && sudo apt-get install -y jq; fi
+
+info "准备测试工具..."; MACHINE_ARCH=$(uname -m); case "$MACHINE_ARCH" in "x86_64") ARCH="amd64" ;; "aarch64") ARCH="arm64" ;; *) error "不支持的架构。";; esac
+REPO="CrazyStrangeSue/CloudflareSpeedTest-Mirror"; API_URL="https://api.github.com/repos/${REPO}/releases/latest"; ASSET_NAME="cfst_linux_${ARCH}.tar.gz"
+DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name == \"${ASSET_NAME}\") | .browser_download_url"); if [ -z "$DOWNLOAD_URL" ]; then error "无法找到下载资产 '${ASSET_NAME}'。"; fi
+wget -qO cfst.tar.gz "$DOWNLOAD_URL"; tar -zxf cfst.tar.gz; chmod +x cfst; info "工具准备就绪。"
+
+# --- 【最终蓝图】双轨并行执行 ---
+# IPv4 轨道: fast0 -> fast4
+hunt_and_update "IPv4" "A" "" 0
+# IPv6 轨道: fast5 -> fast9
+hunt_and_update "IPv6" "AAAA" "-f6" 5
+
+info "所有任务完成！"; info "清理..."; cd /; rm -rf "$WORK_DIR"; info "Aura IP Hunter 成功运行完毕。"
