@@ -3,8 +3,8 @@ set -e
 set -o pipefail
 
 # ====================================================================================
-# Aura IP Hunter - v32.0 (The Final Chapter)
-# 最终版: 使用混合IP文件绕过测速工具核心缺陷，确保双轨并行绝对成功
+# Aura IP Hunter - v33.0 (The Finisher)
+# 最终版: 修正混合IP文件生成时的换行符问题
 # ====================================================================================
 
 WORK_DIR=$(mktemp -d); cd "$WORK_DIR" || exit 1
@@ -63,7 +63,7 @@ hunt_and_update() {
 }
 
 # --- 主流程 ---
-info "启动 Aura IP Hunter v32.0 (The Final Chapter)..."
+info "启动 Aura IP Hunter v33.0 (The Finisher)..."
 if ! command -v jq &> /dev/null; then sudo apt-get update && sudo apt-get install -y jq; fi
 
 info "准备测试工具..."; MACHINE_ARCH=$(uname -m); case "$MACHINE_ARCH" in "x86_64") ARCH="amd64" ;; "aarch64") ARCH="arm64" ;; *) error "不支持的架构。";; esac
@@ -73,6 +73,9 @@ wget -qO cfst.tar.gz "$DOWNLOAD_URL"; tar -zxf cfst.tar.gz; chmod +x cfst; info 
 
 info "准备混合IP情报文件..."
 curl -s "https://www.cloudflare.com/ips-v4" > combined_ips.txt
+# ==================== 【最终修复】: 强制添加换行符 ====================
+echo "" >> combined_ips.txt
+# =====================================================================
 curl -s "https://www.cloudflare.com/ips-v6" >> combined_ips.txt
 info "混合情报文件创建成功。"
 
