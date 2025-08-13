@@ -3,9 +3,10 @@ set -e
 set -o pipefail
 
 # ====================================================================================
-# Aura IP Hunter - v25.0 (Fortress Edition)
-# 最终毕业作品：多源情报、双轨并行、健壮提取、语法完美
+# Aura IP Hunter - v26.0 (Official Source Edition)
+# 最终版: 使用 Cloudflare 官方 IP 源，双轨并行，绝对健壮
 # ====================================================================================
+
 WORK_DIR=$(mktemp -d); cd "$WORK_DIR" || exit 1
 info() { echo -e "\e[32m[信息]\e[0m $1"; }
 error() { echo -e "\e[31m[错误]\e[0m $1"; exit 1; }
@@ -13,41 +14,7 @@ error() { echo -e "\e[31m[错误]\e[0m $1"; exit 1; }
 # 加载配置文件 (如果存在)
 if [ -f "../hunter.conf" ]; then info "加载 hunter.conf..."; source ../hunter.conf; fi
 TOP_N=${TOP_N:-5}
-CF_API_REQUEST_ARGS=(-s -H "X-Auth-Email: ${CF_API_EMAIL}" -H "X-Auth-Key: ${CF_API_KEY}" -H "Content-Type: application/json")
-
-# --- 【健壮性升级】多源情报获取函数 ---
-fetch_ips() {
-    local ip_type="$1"
-    local primary_source="https://stock.hostmonit.com/CloudFlareYes"
-    local fallback_source_v4="https://www.cloudflare.com/ips-v4"
-    local fallback_source_v6="https://www.cloudflare.com/ips-v6"
-    local output_file="ip_${ip_type}.txt"
-    
-    info "阶段1.1: 尝试从主情报源 [${primary_source}] 获取 ${ip_type} IP..."
-    if [[ "$ip_type" == "IPv4" ]]; then
-        curl -s "$primary_source" | awk -F, '/\./ {print $1}' > "$output_file"
-    else
-        curl -s "$primary_source" | awk -F, '/:/ {print $1}' | sed 's/\[//g; s/\]//g' > "$output_file"
-    fi
-
-    if [ ! -s "$output_file" ]; then
-        warn "主情报源获取失败或无数据，自动切换至备用源..."
-        local fallback_source
-        if [[ "$ip_type" == "IPv4" ]]; then
-            fallback_source="$fallback_source_v4"
-        else
-            fallback_source="$fallback_source_v6"
-        fi
-        info "阶段1.2: 尝试从备用情报源 [${fallback_source}] 获取 ${ip_type} IP..."
-        curl -s "$fallback_source" > "$output_file"
-    fi
-
-    if [ ! -s "$output_file" ]; then
-        error "所有情报源均无法获取任何 ${ip_type} 数据。"
-    fi
-    info "情报获取成功！准备了 $(wc -l < "$output_file") 个高质量 ${ip_type} IP。"
-}
-
+CF_API_REQUEST_ARGS=(-s --connect-timeout 15 -H "X-Auth-Email: ${CF_API_EMAIL}" -H "X-Auth-Key: ${CF_API_KEY}" -H "Content-Type: application/json")
 
 # --- 核心优选与更新函数 ---
 hunt_and_update() {
@@ -55,31 +22,34 @@ hunt_and_update() {
     local dns_record_type="$2"
     local speedtest_args="$3"
     local start_index="$4"
+    local ip_source_url="$5"
 
     info "====== 开始处理 ${ip_type} 优选 ======"
-    fetch_ips "$ip_type"
-    
-    info "阶段2：执行 ${ip_type} 测速..."; 
+    info "阶段1：从官方源 [${ip_source_url}] 获取 ${ip_type} IP..."
+    curl -s "$ip_source_url" > "ip_${ip_type}.txt"
+    if [ ! -s "ip_${ip_type}.txt" ]; then error "无法从官方源获取任何 ${ip_type} 数据。"; fi
+    info "获取了 $(wc -l < "ip_${ip_type}.txt") 个 ${ip_type} IP段。"
+
+    info "阶段2：执行 ${ip_type} 测速...";
     ./cfst -f "ip_${ip_type}.txt" -o "result_${ip_type}.csv" -p "${TOP_N}" ${speedtest_args}
     if [ ! -s "result_${ip_type}.csv" ]; then error "${ip_type} 优选失败：未能找到满足条件的 IP。"; fi
-    
+
     local top_ips; top_ips=($(tail -n +2 "result_${ip_type}.csv" | awk -F, '{print $1}'))
     info "已捕获 Top ${#top_ips[@]} ${ip_type} IP 舰队：${top_ips[*]}"
-    if [ ${#top_ips[@]} -eq 0 ]; then error "未能提取任何 ${ip_type} IP。"; fi
-    
+    if [ ${#top_ips[@]} -eq 0 ]; then error "未能从测速结果中提取任何 ${ip_type} IP。"; fi
+
     info "阶段3：部署 ${ip_type} 舰队至 Cloudflare DNS..."
     local all_records_endpoint="https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records?type=${dns_record_type}&per_page=100"
     local all_records_response; all_records_response=$(curl "${CF_API_REQUEST_ARGS[@]}" -X GET "${all_records_endpoint}")
-    
+
     local current_index=0
     for i in $(seq "${start_index}" "$((start_index + TOP_N - 1))"); do
         local target_domain="${CF_RECORD_NAME}${i}.${CF_ZONE_NAME}"
-        
         if [ -z "${top_ips[$current_index]}" ]; then warn "优选IP不足，无法为 ${target_domain} 分配。"; continue; fi
         local new_ip="${top_ips[$current_index]}"
         info "正在处理 #${i}: ${target_domain}"
         local record_info; record_info=$(echo "$all_records_response" | jq -r ".result[] | select(.name == \"${target_domain}\")")
-        
+
         if [ -z "$record_info" ]; then
             info "  -> 记录不存在，创建 -> ${new_ip}"
             local update_endpoint="https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records"
@@ -87,7 +57,9 @@ hunt_and_update() {
             curl "${CF_API_REQUEST_ARGS[@]}" -X POST "${update_endpoint}" --data-raw "$update_data" > /dev/null
         else
             local record_id; record_id=$(echo "$record_info" | jq -r '.id'); local current_ip; current_ip=$(echo "$record_info" | jq -r '.content')
-            if [ "$new_ip" == "$current_ip" ]; then info "  -> IP 未变化 (${current_ip})。"; else
+            if [ "$new_ip" == "$current_ip" ]; then
+                info "  -> IP 未变化 (${current_ip})。"
+            else
                 info "  -> IP 变化 (${current_ip} -> ${new_ip})，更新..."
                 local update_endpoint="https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records/${record_id}"
                 local update_data; update_data=$(jq -n --arg type "$dns_record_type" --arg name "$target_domain" --arg content "$new_ip" '{type: $type, name: $name, content: $content, ttl: 120, proxied: false}')
@@ -100,7 +72,7 @@ hunt_and_update() {
 }
 
 # --- 主流程 ---
-info "启动 Aura IP Hunter v25.0 (Fortress Edition)..."
+info "启动 Aura IP Hunter v26.0 (Official Source Edition)..."
 if ! command -v jq &> /dev/null; then sudo apt-get update && sudo apt-get install -y jq; fi
 
 info "准备测试工具..."; MACHINE_ARCH=$(uname -m); case "$MACHINE_ARCH" in "x86_64") ARCH="amd64" ;; "aarch64") ARCH="arm64" ;; *) error "不支持的架构。";; esac
@@ -110,8 +82,8 @@ wget -qO cfst.tar.gz "$DOWNLOAD_URL"; tar -zxf cfst.tar.gz; chmod +x cfst; info 
 
 # --- 【最终蓝图】双轨并行执行 ---
 # IPv4 轨道: fast0 -> fast4
-hunt_and_update "IPv4" "A" "" 0
+hunt_and_update "IPv4" "A" "" 0 "https://www.cloudflare.com/ips-v4"
 # IPv6 轨道: fast5 -> fast9
-hunt_and_update "IPv6" "AAAA" "-f6" 5
+hunt_and_update "IPv6" "AAAA" "-f6" 5 "https://www.cloudflare.com/ips-v6"
 
 info "所有任务完成！"; info "清理..."; cd /; rm -rf "$WORK_DIR"; info "Aura IP Hunter 成功运行完毕。"
