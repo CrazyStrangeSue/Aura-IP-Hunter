@@ -3,14 +3,15 @@ set -e
 set -o pipefail
 
 # ====================================================================================
-# Aura IP Hunter - v30.0 (Victory Edition)
-# 最终毕业作品：净化式更新、简化信赖、双轨并行、绝对健壮
+# Aura IP Hunter - v31.0 (Final Cut)
+# 最终版: 强制 IPv6 CIDR 范围扩展，以绝对兼容性解决测速工具的内部缺陷
 # ====================================================================================
 
 WORK_DIR=$(mktemp -d); cd "$WORK_DIR" || exit 1
 info() { echo -e "\e[32m[信息]\e[0m $1"; }
 error() { echo -e "\e[31m[错误]\e[0m $1"; exit 1; }
 
+# 加载配置文件 (如果存在)
 if [ -f "../hunter.conf" ]; then info "加载 hunter.conf..."; source ../hunter.conf; fi
 TOP_N=${TOP_N:-5}
 CF_API_REQUEST_ARGS=(-s --connect-timeout 20 -H "X-Auth-Email: ${CF_API_EMAIL}" -H "X-Auth-Key: ${CF_API_KEY}" -H "Content-Type: application/json")
@@ -25,9 +26,43 @@ hunt_and_update() {
 
     info "====== 开始处理 ${ip_type} 优选 ======"
     info "阶段1：从官方源 [${ip_source_url}] 获取 ${ip_type} IP段..."
-    curl -s "$ip_source_url" > "ip_${ip_type}.txt"
-    if [ ! -s "ip_${ip_type}.txt" ]; then error "无法从官方源获取任何 ${ip_type} 数据。"; fi
-    info "情报获取成功！"
+    curl -s "$ip_source_url" > "ip_${ip_type}_cidr.txt"
+
+    # ==================== 【最终修复】: 强制扩展 IPv6 CIDR ====================
+    if [[ "$ip_type" == "IPv6" ]]; then
+        info "  -> 正在将 IPv6 CIDR 扩展为单个 IP 地址 (这可能需要几分钟)..."
+        python3 -c "
+import ipaddress
+import sys
+try:
+    with open('ip_IPv6_cidr.txt', 'r') as f_in, open('ip_IPv6.txt', 'w') as f_out:
+        for line in f_in:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                network = ipaddress.ip_network(line)
+                # To avoid generating millions of IPs, we only take the first and last address from larger subnets
+                if network.prefixlen < 120:
+                    f_out.write(str(network.network_address) + '\n')
+                    f_out.write(str(network.broadcast_address) + '\n')
+                else:
+                    for ip in network.hosts():
+                        f_out.write(str(ip) + '\n')
+            except ValueError:
+                sys.stderr.write(f'Skipping invalid CIDR: {line}\n')
+except Exception as e:
+    sys.stderr.write(f'Error processing IPv6 CIDR file: {e}\n')
+    sys.exit(1)
+"
+    else
+        # IPv4 的 CIDR 文件可以直接被测速工具处理
+        cp "ip_${ip_type}_cidr.txt" "ip_${ip_type}.txt"
+    fi
+    # ========================================================================
+
+    if [ ! -s "ip_${ip_type}.txt" ]; then error "无法处理任何 ${ip_type} 数据。"; fi
+    info "情报处理成功！准备了 $(wc -l < "ip_${ip_type}.txt") 行 ${ip_type} IP数据。"
 
     info "阶段2：执行 ${ip_type} 测速...";
     ./cfst -f "ip_${ip_type}.txt" -o "result_${ip_type}.csv" -p "${TOP_N}" ${speedtest_args}
@@ -37,7 +72,7 @@ hunt_and_update() {
     info "已捕获 Top ${#top_ips[@]} ${ip_type} IP 舰队：${top_ips[*]}"
     if [ ${#top_ips[@]} -eq 0 ]; then error "未能从测速结果中提取任何 ${ip_type} IP。"; fi
 
-    info "阶段3：部署 ${ip_type} 舰队 (采用净化式更新)..."
+    info "阶段3：部署 ${ip_type} 舰队至 Cloudflare DNS (净化式更新)..."
     local all_records_endpoint="https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records?type=${dns_record_type}&per_page=100"
     local all_records_response; all_records_response=$(curl "${CF_API_REQUEST_ARGS[@]}" -X GET "${all_records_endpoint}")
 
@@ -45,20 +80,17 @@ hunt_and_update() {
     for i in $(seq "${start_index}" "$((start_index + TOP_N - 1))"); do
         local target_domain="${CF_RECORD_NAME}${i}.${CF_ZONE_NAME}"
         
-        # ==================== 【最终修复】: 净化式更新 ====================
-        info "正在净化旧的 ${target_domain} 记录..."
+        info "  -> 正在净化旧的 ${target_domain} 记录..."
         local old_record_ids; old_record_ids=$(echo "$all_records_response" | jq -r ".result[] | select(.name == \"${target_domain}\") | .id")
         for record_id in $old_record_ids; do
-            info "  -> 删除旧记录 ID: ${record_id}"
             local delete_endpoint="https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records/${record_id}"
             curl "${CF_API_REQUEST_ARGS[@]}" -X DELETE "${delete_endpoint}" > /dev/null
         done
-        # =================================================================
 
         if [ -z "${top_ips[$current_index]}" ]; then warn "优选IP不足，无法为 ${target_domain} 分配。"; continue; fi
         local new_ip="${top_ips[$current_index]}"
         
-        info "正在为 ${target_domain} 创建新记录 -> ${new_ip}"
+        info "  -> 正在为 ${target_domain} 创建新记录 -> ${new_ip}"
         local create_endpoint="https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records"
         local create_data; create_data=$(jq -n --arg type "$dns_record_type" --arg name "$target_domain" --arg content "$new_ip" '{type: $type, name: $name, content: $content, ttl: 120, proxied: false}')
         curl "${CF_API_REQUEST_ARGS[@]}" -X POST "${create_endpoint}" --data-raw "$create_data" > /dev/null
@@ -69,7 +101,7 @@ hunt_and_update() {
 }
 
 # --- 主流程 ---
-info "启动 Aura IP Hunter v30.0 (Victory Edition)..."
+info "启动 Aura IP Hunter v31.0 (Final Cut)..."
 if ! command -v jq &> /dev/null; then sudo apt-get update && sudo apt-get install -y jq; fi
 
 info "准备测试工具..."; MACHINE_ARCH=$(uname -m); case "$MACHINE_ARCH" in "x86_64") ARCH="amd64" ;; "aarch64") ARCH="arm64" ;; *) error "不支持的架构。";; esac
