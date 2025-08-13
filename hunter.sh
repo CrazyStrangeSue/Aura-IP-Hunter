@@ -3,11 +3,11 @@ set -e
 set -o pipefail
 
 # ====================================================================================
-# Aura IP Hunter - v27.0 (CIDR Expansion Edition)
-# 最终版: 增加 IPv6 CIDR 范围扩展，确保测速工具兼容性
+# Aura IP Hunter - v28.0 (Final Stand Edition)
+# 最终版: 强制 IPv6 CIDR 范围扩展，确保对测速工具的绝对兼容性
 # ====================================================================================
 
-WORK_DIR=$(mktemp -d); cd "$WORK_DIR" || exit 1
+WORK_DIR=$(mtemp -d); cd "$WORK_DIR" || exit 1
 info() { echo -e "\e[32m[信息]\e[0m $1"; }
 error() { echo -e "\e[31m[错误]\e[0m $1"; exit 1; }
 
@@ -25,21 +25,25 @@ hunt_and_update() {
     local ip_source_url="$5"
 
     info "====== 开始处理 ${ip_type} 优选 ======"
-    info "阶段1：从官方源 [${ip_source_url}] 获取 ${ip_type} IP..."
+    info "阶段1：从官方源 [${ip_source_url}] 获取 ${ip_type} IP段..."
     curl -s "$ip_source_url" > "ip_${ip_type}_cidr.txt"
-    
-    # 【最终修复】: 为 IPv6 扩展 CIDR，为 IPv4 直接使用
+
+    # ==================== 【最终修复】: 强制扩展 IPv6 CIDR ====================
     if [[ "$ip_type" == "IPv6" ]]; then
-        info "  -> 正在将 IPv6 CIDR 扩展为单个 IP 地址 (这可能需要一点时间)..."
-        # 使用 prips 工具 (如果可用) 或一个简单的 awk/sed 脚本来处理
-        # 为简化，我们直接使用 CloudflareSpeedTest 的 CIDR 处理能力，但确保文件格式纯净
-        cp "ip_${ip_type}_cidr.txt" "ip_${ip_type}.txt"
+        info "  -> 正在将 IPv6 CIDR 扩展为单个 IP 地址列表..."
+        # prips 是专门处理IP地址范围的工具，非常可靠
+        sudo apt-get install -y prips > /dev/null
+        while IFS= read -r line; do
+            prips "$line" >> "ip_${ip_type}.txt"
+        done < "ip_${ip_type}_cidr.txt"
     else
+        # IPv4 的 CIDR 文件可以直接被测速工具处理
         cp "ip_${ip_type}_cidr.txt" "ip_${ip_type}.txt"
     fi
+    # ========================================================================
 
     if [ ! -s "ip_${ip_type}.txt" ]; then error "无法处理任何 ${ip_type} 数据。"; fi
-    info "情报处理成功！准备了 $(wc -l < "ip_${ip_type}.txt") 个 ${ip_type} IP段。"
+    info "情报处理成功！准备了 $(wc -l < "ip_${ip_type}.txt") 行 ${ip_type} IP数据。"
 
     info "阶段2：执行 ${ip_type} 测速...";
     ./cfst -f "ip_${ip_type}.txt" -o "result_${ip_type}.csv" -p "${TOP_N}" ${speedtest_args}
@@ -83,7 +87,7 @@ hunt_and_update() {
 }
 
 # --- 主流程 ---
-info "启动 Aura IP Hunter v27.0 (CIDR Expansion Edition)..."
+info "启动 Aura IP Hunter v28.0 (Final Stand Edition)..."
 if ! command -v jq &> /dev/null; then sudo apt-get update && sudo apt-get install -y jq; fi
 
 info "准备测试工具..."; MACHINE_ARCH=$(uname -m); case "$MACHINE_ARCH" in "x86_64") ARCH="amd64" ;; "aarch64") ARCH="arm64" ;; *) error "不支持的架构。";; esac
