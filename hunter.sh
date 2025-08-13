@@ -3,8 +3,8 @@ set -e
 set -o pipefail
 
 # ====================================================================================
-# Aura IP Hunter - v31.0 (Final Cut)
-# 最终版: 强制 IPv6 CIDR 范围扩展，以绝对兼容性解决测速工具的内部缺陷
+# Aura IP Hunter - v32.0 (The Final Chapter)
+# 最终版: 使用混合IP文件绕过测速工具核心缺陷，确保双轨并行绝对成功
 # ====================================================================================
 
 WORK_DIR=$(mktemp -d); cd "$WORK_DIR" || exit 1
@@ -22,57 +22,19 @@ hunt_and_update() {
     local dns_record_type="$2"
     local speedtest_args="$3"
     local start_index="$4"
-    local ip_source_url="$5"
+    local ip_file="$5"
 
     info "====== 开始处理 ${ip_type} 优选 ======"
-    info "阶段1：从官方源 [${ip_source_url}] 获取 ${ip_type} IP段..."
-    curl -s "$ip_source_url" > "ip_${ip_type}_cidr.txt"
-
-    # ==================== 【最终修复】: 强制扩展 IPv6 CIDR ====================
-    if [[ "$ip_type" == "IPv6" ]]; then
-        info "  -> 正在将 IPv6 CIDR 扩展为单个 IP 地址 (这可能需要几分钟)..."
-        python3 -c "
-import ipaddress
-import sys
-try:
-    with open('ip_IPv6_cidr.txt', 'r') as f_in, open('ip_IPv6.txt', 'w') as f_out:
-        for line in f_in:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                network = ipaddress.ip_network(line)
-                # To avoid generating millions of IPs, we only take the first and last address from larger subnets
-                if network.prefixlen < 120:
-                    f_out.write(str(network.network_address) + '\n')
-                    f_out.write(str(network.broadcast_address) + '\n')
-                else:
-                    for ip in network.hosts():
-                        f_out.write(str(ip) + '\n')
-            except ValueError:
-                sys.stderr.write(f'Skipping invalid CIDR: {line}\n')
-except Exception as e:
-    sys.stderr.write(f'Error processing IPv6 CIDR file: {e}\n')
-    sys.exit(1)
-"
-    else
-        # IPv4 的 CIDR 文件可以直接被测速工具处理
-        cp "ip_${ip_type}_cidr.txt" "ip_${ip_type}.txt"
-    fi
-    # ========================================================================
-
-    if [ ! -s "ip_${ip_type}.txt" ]; then error "无法处理任何 ${ip_type} 数据。"; fi
-    info "情报处理成功！准备了 $(wc -l < "ip_${ip_type}.txt") 行 ${ip_type} IP数据。"
-
-    info "阶段2：执行 ${ip_type} 测速...";
-    ./cfst -f "ip_${ip_type}.txt" -o "result_${ip_type}.csv" -p "${TOP_N}" ${speedtest_args}
+    
+    info "阶段1：执行 ${ip_type} 测速...";
+    ./cfst -f "${ip_file}" -o "result_${ip_type}.csv" -p "${TOP_N}" ${speedtest_args}
     if [ ! -s "result_${ip_type}.csv" ]; then error "${ip_type} 优选失败：未能找到满足条件的 IP。"; fi
 
     local top_ips; top_ips=($(tail -n +2 "result_${ip_type}.csv" | awk -F, '{print $1}'))
     info "已捕获 Top ${#top_ips[@]} ${ip_type} IP 舰队：${top_ips[*]}"
     if [ ${#top_ips[@]} -eq 0 ]; then error "未能从测速结果中提取任何 ${ip_type} IP。"; fi
 
-    info "阶段3：部署 ${ip_type} 舰队至 Cloudflare DNS (净化式更新)..."
+    info "阶段2：部署 ${ip_type} 舰队 (采用净化式更新)..."
     local all_records_endpoint="https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/dns_records?type=${dns_record_type}&per_page=100"
     local all_records_response; all_records_response=$(curl "${CF_API_REQUEST_ARGS[@]}" -X GET "${all_records_endpoint}")
 
@@ -101,7 +63,7 @@ except Exception as e:
 }
 
 # --- 主流程 ---
-info "启动 Aura IP Hunter v31.0 (Final Cut)..."
+info "启动 Aura IP Hunter v32.0 (The Final Chapter)..."
 if ! command -v jq &> /dev/null; then sudo apt-get update && sudo apt-get install -y jq; fi
 
 info "准备测试工具..."; MACHINE_ARCH=$(uname -m); case "$MACHINE_ARCH" in "x86_64") ARCH="amd64" ;; "aarch64") ARCH="arm64" ;; *) error "不支持的架构。";; esac
@@ -109,10 +71,15 @@ REPO="CrazyStrangeSue/CloudflareSpeedTest-Mirror"; API_URL="https://api.github.c
 DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name == \"${ASSET_NAME}\") | .browser_download_url"); if [ -z "$DOWNLOAD_URL" ]; then error "无法找到下载资产 '${ASSET_NAME}'。"; fi
 wget -qO cfst.tar.gz "$DOWNLOAD_URL"; tar -zxf cfst.tar.gz; chmod +x cfst; info "工具准备就绪。"
 
+info "准备混合IP情报文件..."
+curl -s "https://www.cloudflare.com/ips-v4" > combined_ips.txt
+curl -s "https://www.cloudflare.com/ips-v6" >> combined_ips.txt
+info "混合情报文件创建成功。"
+
 # --- 【最终蓝图】双轨并行执行 ---
 # IPv4 轨道: fast0 -> fast4
-hunt_and_update "IPv4" "A" "" 0 "https://www.cloudflare.com/ips-v4"
+hunt_and_update "IPv4" "A" "" 0 "combined_ips.txt"
 # IPv6 轨道: fast5 -> fast9
-hunt_and_update "IPv6" "AAAA" "-f6" 5 "https://www.cloudflare.com/ips-v6"
+hunt_and_update "IPv6" "AAAA" "-f6" 5 "combined_ips.txt"
 
 info "所有任务完成！"; info "清理..."; cd /; rm -rf "$WORK_DIR"; info "Aura IP Hunter 成功运行完毕。"
